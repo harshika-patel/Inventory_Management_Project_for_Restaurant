@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Shifts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        .home-container {
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            height: auto;
+            margin: 30px auto;
+        }
+
+        .home-container h2 {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            background-color: #4caf50;
+            color: white;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        h2 {
+            font-family: Arial, sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button, a{
+            padding: 8px 15px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+}
+
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            left: 30;
+            top: 0;
+            width: 40%;
+            height: 80%;
+            background-color: white;
+            z-index: 9999;
+            border: 2px solid black;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            padding: 20px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            text-align: center;
+            transform: translate(-50%, -50%);
+        }
+
+        .popup-content h2 {
+            text-align: center;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="home-container">
+<h2>Employee Shifts</h2>
+<button><a href="Home.html">Home</a></button>
+<button><a href="/viewEmployees">Add employee</a></button>
+
+<!-- Button to view employee details -->
+<button><a href="/viewEmployees">View Employee Details</a></button>
+
+
+<button onclick="sendShiftEmails()">Publish</button>
+<br>
+<br>
+
+<form id="weekForm">
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" name="startDate" required>
+    <br><br>
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" name="endDate" required>
+    <br><br>
+    
+</form>
+
+<button onclick="generateTable()">Generate Table</button>
+<br>
+
+<div id="weekCalendar"></div>
+
+
+
+<!-- Container for the table -->
+<div id="tableContainer"></div>
+
+<!-- Popup for shift creation -->
+<div id="shiftPopup" class="popup" style="display: none;">
+    <h3>Add Shift</h3>
+    <p>Employee: <span id="popupEmployeeName"></span></p>
+    <p>Day: <span id="popupDayOfWeek"></span></p>
+    <input type="hidden" id="popupEmployee" value="">
+    <input type="hidden" id="popupDate" value="">
+    <input type="hidden" id="popupEmployeeId" value="">
+    <input type="hidden" id="popupDay" value="">
+    <label for="startTime">Start Time:</label>
+    <input type="time" id="startTime" onchange="calculateTotalTime()" required>
+    <br><br>
+    <label for="endTime">End Time:</label>
+    <input type="time" id="endTime" onchange="calculateTotalTime()" required>
+    <br><br>
+    <label for="duties">Duties:</label>
+    <textarea id="duties" rows="4" cols="50"></textarea>
+    <br><br>
+    <label for="totalTime">Total Time:</label>
+    <input type="text" id="totalTime" readonly>
+    <br><br>
+    <button onclick="saveShift()">Save</button>
+    <button onclick="closePopup()">Close</button>
+    <button onclick="deleteShift()">Delete</button>
+</div>
+<br>
+<br>
+<footer>
+    &copy; 2024 Inventory Management System. All rights reserved.
+</footer>
+</div>
+
+
+<script>
+function generateTable() {
+    const startDateInput = document.getElementById("startDate");
+    const endDateInput = document.getElementById("endDate");
+
+    // Get the selected start and end dates
+    const startDate = new Date(startDateInput.value);
+    const endDate = new Date(endDateInput.value);
+
+    // Create a table to display the week calendar
+    let tableHtml = "<table><thead><tr><th>Employee Name</th>";
+
+    // Loop through each date in the selected week to create table headers
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateString = date.toISOString().split('T')[0];
+        const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
+
+        // Add headers for each day along with their dates
+        tableHtml += `<th>${dayOfWeek}<br>${dateString}</th>`;
+    }
+
+    tableHtml += "</tr></thead><tbody>";
+
+    // Fetch employee data
+    fetch('/getEmployees')
+        .then(response => response.json())
+        .then(data => {
+            // Loop through each employee to create table rows
+            data.forEach(employee => {
+                tableHtml += `<tr><td>${employee.name}</td>`; // Access employee name
+
+                // Loop through each date in the selected week to create table cells
+                for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+                    const dateString = date.toISOString().split('T')[0];
+                    const cellId = `${employee.name}_${dateString}`;
+                    
+                    // Create unique ID for each cell based on employee name and date
+                    tableHtml += `<td id="${cellId}" onclick="openPopup('${employee.name}', '${dateString}')">Add shift</td>`;
+                }
+                
+                tableHtml += "</tr>";
+            });
+
+            tableHtml += "</tbody></table>";
+            document.getElementById("tableContainer").innerHTML = tableHtml;
+        })
+        .catch(error => {
+            console.error('Error fetching employee data:', error);
+        });
+}
+
+    // Function to open the popup for shift creation
+    function openPopup(employee, day) {
+    var employeeName = employee; // You can get this from the employee parameter
+    var dayOfWeek = day; // You can get this from the day parameter
+    document.getElementById("popupEmployeeName").innerText = employeeName;
+    document.getElementById("popupDayOfWeek").innerText = dayOfWeek;
+
+    // Set the values of the hidden inputs
+    document.getElementById("popupEmployee").value = employeeName;
+    document.getElementById("popupDay").value = dayOfWeek;
+
+    document.getElementById("shiftPopup").style.display = "block";
+}
+
+    // Function to close the popup
+    function closePopup() {
+        document.getElementById("shiftPopup").style.display = "none";
+    }
+
+
+    function saveShift() {
+    // Get shift data from the form
+    const employeeId = document.getElementById("popupEmployeeId").value;
+    const day = document.getElementById("popupDay").value;
+    const startTime = document.getElementById("startTime").value;
+    const endTime = document.getElementById("endTime").value;
+    const duties = document.getElementById("duties").value;
+    const employeeName = document.getElementById("popupEmployee").value;
+
+    // Create a shift object with the data
+    const shiftData = {
+        userId: employeeId, // Assuming the server provides the ObjectId as employeeId
+        day,
+        startTime,
+        endTime,
+        duties,
+        employeeName
+    };
+
+    // Send the shift data to the server using a POST request
+    fetch('/shifts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(shiftData)
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json(); // Parse the JSON response
+        } else {
+            throw new Error('Failed to save shift');
+        }
+    })
+    .then(savedShift => {
+        // Update the corresponding table cell with the shift information
+        const cellId = `${savedShift.employeeName}_${savedShift.day}`; // Assuming this is the correct format
+        const cell = document.getElementById(cellId);
+        if (cell) {
+            cell.innerHTML = `Start: ${savedShift.startTime}<br>End: ${savedShift.endTime}<br>Duties: ${savedShift.duties}`;
+        }
+        alert('Shift saved successfully');
+        closePopup(); // Close the popup after saving the shift
+    })
+    .catch(error => {
+        console.error('Error saving shift:', error);
+        alert('Failed to save shift');
+    });
+}
+
+
+
+    function deleteShift() {
+    var selectedEmployee = document.getElementById("popupEmployee").value;
+    var selectedDay = document.getElementById("popupDay").value;
+    var cellId = selectedEmployee + "_" + selectedDay;
+    var cell = document.getElementById(cellId);
+    if (cell) {
+        cell.innerHTML = "Add shift"; // Reset cell content
+    }
+    closePopup(); // Close the popup
+}
+    
+
+function calculateTotalTime() {
+        var startTime = document.getElementById("startTime").value;
+        var endTime = document.getElementById("endTime").value;
+
+        if (startTime && endTime) {
+            var start = new Date("1970-01-01T" + startTime + "Z");
+            var end = new Date("1970-01-01T" + endTime + "Z");
+
+            var diff = end.getTime() - start.getTime();
+            var hours = Math.floor(diff / (1000 * 60 * 60));
+            var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            document.getElementById("totalTime").value = hours + " hours " + minutes + " minutes";
+        }
+    }
+
+
+
+function sendShiftEmails() {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    // Send a POST request to the server with the selected date range
+    fetch('/send-shift-emails', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ startDate, endDate })
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.text();
+        } else {
+            throw new Error('Failed to send shift emails');
+        }
+    })
+    .then(message => {
+        alert(message); // Display success message
+    })
+    .catch(error => {
+        console.error('Error sending shift emails:', error);
+        alert('Failed to send shift emails');
+    });
+}
+
+
+</script>
+
+</body>
+</html>

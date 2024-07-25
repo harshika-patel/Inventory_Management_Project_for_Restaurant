@@ -1,0 +1,223 @@
+<!-- viewEmployees.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Employee Details</title>
+    <style>
+         body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        .home-container {
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            height: auto;
+            margin: 30px auto;
+        }
+
+        .home-container h2 {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            background-color: #4caf50;
+            color: white;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+        h2 {
+            font-family: Arial, sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    h3 {
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button, a{
+            padding: 8px 15px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .popup {
+            display: none;
+            position: fixed; 
+            right:30%;
+            top: 10;
+            width: 30%;
+            height: 30%;
+            background-color: white;
+            z-index: 9999;
+            align-items: center;
+            border: 2px solid black;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            padding: 300px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            
+            text-align: center;
+            transform: translate(-50%, -50%);
+        }
+
+        .popup-content h3 {
+            text-align: center;
+            
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="home-container">
+
+<h2>Employee Details</h2>
+<button><a href="Home.html">Home</a></button>
+<button><a href="Shifts.html">Shift Creation</a></button>
+<!-- Button to add employees -->
+
+<button onclick="openAddEmployeePopup()">Add Employee</button>
+<br><br>
+<!-- Popup for adding employee -->
+<div id="addEmployeePopup" class="popup" style="display: none;">
+    <h3>Add Employee</h3>
+    <form id="addEmployeeForm">
+        <label for="employeeName">Employee Name:</label>
+        <input type="text" id="employeeName" name="name" required>
+        <br><br>
+        <label for="employeeEmail">Employee Email:</label>
+        <input type="email" id="employeeEmail" name="email" required>
+        <br><br>
+        <button type="submit" onclick="saveEmployee()">Save</button>
+        <button type="button" onclick="closeAddEmployeePopup()">Cancel</button>
+    </form>
+</div>
+
+<!-- Container for displaying employee details -->
+<div id="employeeDetailsContainer"></div>
+<br>
+<br>
+<footer>
+    &copy; 2024 Inventory Management System. All rights reserved.
+</footer>
+</div>
+
+<script>
+    // Fetch employee data from the server and display it in a table
+    fetch('/getEmployees')
+        .then(response => response.json())
+        .then(data => {
+            const tableHtml = "<table><thead><tr><th>Employee Name</th><th>Email</th><th>Action</th></tr></thead><tbody>" +
+                              data.map(employee => `<tr><td>${employee.name}</td><td>${employee.email}</td><td><button onclick="deleteEmployee('${employee._id}')">Delete</button></td></tr>`).join("") +
+                              "</tbody></table>";
+            document.getElementById("employeeDetailsContainer").innerHTML = tableHtml;
+        })
+        .catch(error => console.error('Error fetching employee data:', error));
+
+    // Function to delete an employee
+    function deleteEmployee(employeeName) {
+        fetch(`/deleteEmployee/${employeeName}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                // If the response is successful, reload the page to reflect the changes
+                location.reload();
+            } else {
+                console.error('Error deleting employee:', response.statusText);
+            }
+        })
+        .catch(error => console.error('Error deleting employee:', error));
+    }
+    // Array to store employee names
+    var employees = [];
+    function openAddEmployeePopup() {
+        document.getElementById("addEmployeePopup").style.display = "block";
+    }
+
+    function closeAddEmployeePopup() {
+        document.getElementById("addEmployeePopup").style.display = "none";
+    }
+    function saveEmployee() {
+        // Get employee data from form
+        const employeeName = document.getElementById("employeeName").value;
+        const employeeEmail = document.getElementById("employeeEmail").value;
+
+        // Send data to server using AJAX (POST request)
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/addEmployee", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                alert(xhr.responseText); // Show success message
+                closeAddEmployeePopup(); // Close popup
+            }
+        };
+        xhr.send(JSON.stringify({ name: employeeName, email: employeeEmail }));
+    }
+</script>
+
+</body>
+</html>
